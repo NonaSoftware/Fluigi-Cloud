@@ -1,0 +1,40 @@
+version: '3.7'
+
+services:
+  fluigi-mongodb:
+    image: mongo:3.4.5
+    environment:
+    - AUTH=no
+    ports:
+      - 27017:27017
+    volumes:
+      - ./data:/data/db
+  fluigi-app:
+    build:
+      context: .
+    ports:
+      - '8080:8080'
+    container_name: fluigi-app
+    environment:
+      - NEPTUNE_S3_BUCKET_ID=http://fluigi-s3:4566
+      - NEPTUNE_REDIS_HOST=fluigi-redis
+      - NEPTUNE_REDIS_PORT="6379"
+      - NEPTUNE_MONGOURL=fluigi-mongodb:27017
+    depends_on:
+      - fluigi-mongodb
+      - fluigi-redis
+      - fluigi-s3
+  fluigi-redis:
+    image: redis:6.2-alpine
+    restart: always
+    ports:
+      - '6379:6379'
+    command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+    volumes: 
+      - ./redis:/data
+  fluigi-s3:
+      image: localstack/localstack:latest
+      environment:
+        SERVICES: s3
+      ports:
+        - 4566:4566
